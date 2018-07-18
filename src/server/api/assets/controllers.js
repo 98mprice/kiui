@@ -11,7 +11,20 @@ export const master_index = {
       if (req.params.asset_id) {
         let asset = await Master_Asset.findById(req.params.asset_id)
         if (!asset) throw new ServerError(`No asset with id ${req.params.asset_id} exists at the moment`, { status: 404 })
-        res.json(asset)
+        console.log('ok')
+        var modified_master = {
+            id: asset._id,
+            name: asset.name,
+            bases: []
+        };
+        for (var i = 0; i < asset.bases.length; i++) {
+          var base_asset = await Base_Asset.findById(asset.bases[i])
+          if (base_asset) {
+            modified_master.bases.push(base_asset)
+          }
+        }
+        console.log("RETURNING " + JSON.stringify(modified_master))
+        res.json(modified_master)
       } else if (req.params.type) {
         let assets = await Master_Asset.find({ type: req.params.type })
         console.log("im finding master assets of type " + req.params.type)
@@ -56,13 +69,18 @@ export const master_search_index = {
         if (base_asset) {
           console.log("it is tru")
           modified_master.push({
-            url: base_asset.url,
+            id: master_assets[i]._id,
+            bases: [
+              {
+                url: base_asset.url
+              }
+            ],
             name: master_assets[i].name
           })
           //console.log("it is tru" + JSON.stringify(modified_master[i]))
         }
       }
-      console.log("returning " + JSON.stringify(master_assets))
+      console.log("returning " + JSON.stringify(modified_master))
       res.json(modified_master)
     } catch (error) {
       res.handleServerError(error)
@@ -120,6 +138,7 @@ export const base_type_index = {
         var love_count = 0;
         let newBaseAsset = new Base_Asset({ name, type, url, username, love_count })
         let saved_asset = await newBaseAsset.save()
+        var master_saved_asset_id;
         if (type == "CHARACTER") {
           console.log("looking if character " + master_name + " exists")
           let master_assets = await Master_Asset.find({ name: master_name })
@@ -134,16 +153,22 @@ export const base_type_index = {
             console.log("going to push " + newBaseAsset._id + " to this new master bases array" + newMasterAsset.name)
             newMasterAsset.bases.push(newBaseAsset._id)
             let savedMasterAsset = await newMasterAsset.save()
+            master_saved_asset_id = savedMasterAsset._id
           } else {
             console.log("found this asset so going to add to bases array" + JSON.stringify(master_asset.bases))
             if (master_asset.bases.indexOf(newBaseAsset._id) == -1) {
               console.log("wasnt in bases array so going ot add")
               master_asset.bases.push(newBaseAsset._id)
               let savedMasterAsset = await master_asset.save()
+              master_saved_asset_id = savedMasterAsset._id
             }
           }
         }
-        res.json({ message: `${saved_asset.name} saved` })
+        res.json({
+          master_id: master_saved_asset_id,
+          id: saved_asset._id,
+          message: `${saved_asset.name} saved`
+        })
       }
     } catch (error) {
       res.handleServerError(error)

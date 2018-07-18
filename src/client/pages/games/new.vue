@@ -55,8 +55,8 @@
               height="200px"
               style="background-color: #383838"
             >
-              <img v-if="selected_character.url"
-                :src="selected_character.url"
+              <img v-if="selected_character.bases"
+                :src="selected_character.bases[0].url"
                 style="height: 200px; width: auto; margin-left: auto;
 margin-right: auto;"/>
               <v-layout v-else justify-space-around class="mb-2">
@@ -74,6 +74,9 @@ margin-right: auto;"/>
               ></v-text-field>
               <v-list v-if="show_character_suggestions && (character_suggestions.length > 0)" style="position: relative; top: -25px" light>
             <v-list-tile  v-for="character in character_suggestions" @click="select_character(character)">
+              <v-list-tile-avatar>
+                <img v-if="character.bases" :src="character.bases[0].url">
+              </v-list-tile-avatar>
               <v-list-tile-content >
                 <v-list-tile-title  >{{character.name}}</v-list-tile-title>
               </v-list-tile-content>
@@ -122,9 +125,9 @@ margin-right: auto;"/>
             light
             style="border-radius: 20px; background-color: rgba(255, 255, 255, 0.0); position:relative; margin: 10px;"
             >
-              <img v-if="selected_character.url"
+              <img v-if="selected_character.bases"
                 style="position:absolute; bottom:0; height: 230px; z-index: 2; right: 0px; left: 0px; margin: 0 auto; border-radius: 0px;"
-                :src="selected_character.url"
+                :src="selected_character.bases[0].url"
                 />
                 <div style="position:absolute; bottom:0; height: 50px; width: 100%; z-index: 1; background-color: #ffffff; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px;">
                 </div>
@@ -176,6 +179,7 @@ margin-right: auto;"/>
         </v-toolbar>
         <v-card-text>
           <tree-menu
+            @clicked="onClickChild"
             :show_toolbar="true"
             :forced_type="'BACKGROUND'">
             </tree-menu>
@@ -198,6 +202,7 @@ margin-right: auto;"/>
           </v-toolbar>
           <v-card-text>
           <tree-menu
+            @clicked="onClickChild"
             :show_toolbar="true"
             :forced_type="'CHARACTER'">
             </tree-menu>
@@ -287,6 +292,25 @@ export default {
     init() {
       this.$store.commit('SET_TITLE', "New Game")
       this.$store.commit('SET_SHOW_TOOLBAR', true)
+    },
+    async onClickChild (value) {
+      this.dialog2 = false
+      this.dialog = false
+      console.log("value:" + JSON.stringify(value)) // someValue
+      switch (value.type) {
+        case 'CHARACTER':
+          console.log("looking for character")
+          let master_asset_res = await axios.get(`/assets/master/${value.master_id}`)
+          console.log("master asset res " + JSON.stringify(master_asset_res))
+          this.selected_character = master_asset_res.data;
+          this.character_name = this.selected_character.name
+          break;
+        case 'BACKGROUND':
+          let base_asset_res = await axios.get(`/assets/base/${value.id}`)
+          this.selected_background = base_asset_res.data;
+          this.background_name = this.selected_background.name
+          break;
+      }
     },
     remove (item) {
       this.chips.splice(this.chips.indexOf(item), 1)

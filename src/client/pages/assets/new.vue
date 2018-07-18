@@ -201,8 +201,12 @@ export default {
           username: this.$store.state.user.username
         })
         console.log("done" + JSON.stringify(master_asset_res.data))
-        if (show_toolbar == true) {
-          this.$emit('newdata', [this.formData.name, this.formData.age]);
+        if (this.show_toolbar == true) {
+          this.$emit('clicked', {
+            type: this.selected_type,
+            master_id: master_asset_res.data.master_id,
+            id: master_asset_res.data.id
+          });
         }
     },
     suggest: _.debounce(function() {
